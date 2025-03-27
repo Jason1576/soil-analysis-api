@@ -34,8 +34,8 @@ else:
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        data = request.json
-        required = ["N", "P", "K", "ph", "humidity", "temperature"]
+        data = request.get_json()
+        required = ["N", "P", "K", "temp", "humidity", "ph"]
         if not all(key in data for key in required):
             return jsonify({"error": "Missing fields"}), 400
 
