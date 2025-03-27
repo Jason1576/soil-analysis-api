@@ -10,18 +10,27 @@ Original file is located at
 from flask import Flask, request, jsonify
 import joblib
 import os
+import urllib.request  # For optional remote model loading
 
 app = Flask(__name__)
 
-"""load model"""
+# ====== Updated Model Loading ======
+MODEL_FILENAME = "crop_model.joblib"
+MODEL_PATH = os.path.join(os.path.dirname(__file__), MODEL_FILENAME)
 
-# Mount Google Drive
-from google.colab import drive
-drive.mount('/content/drive')
+# Option 1: Load from local file (preferred for Render)
+if os.path.exists(MODEL_PATH):
+    model = joblib.load(MODEL_PATH)
+else:
+    # Option 2: Download from alternative source (if needed)
+    try:
+        MODEL_URL = "https://github.com/Jason1576/soil-analysis-api/raw/refs/heads/main/crop_model.joblibb"  
+        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+        model = joblib.load(MODEL_PATH)
+    except Exception as e:
+        raise RuntimeError(f"Failed to load model: {str(e)}")
 
-# Load from exact path
-model = joblib.load("/content/drive/MyDrive/crop_model.joblib")
-
+# ====== Prediction Endpoint ======
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
@@ -37,5 +46,7 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ====== Main Execution ======
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))  # For Render compatibility
+    app.run(host='0.0.0.0', port=port)
